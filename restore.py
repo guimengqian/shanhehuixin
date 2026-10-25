@@ -39,3 +39,16 @@ with zipfile.ZipFile(archive) as z:
         assert (target / info.filename).resolve().is_relative_to(target)
     z.extractall(target)
 print('Website restored, including both complete films.', flush=True)
+
+# Small verified updates overlay the complete media archive.
+for patch in manifest.get('overlays', []):
+    name = patch['name']
+    assert Path(name).name == name
+    path = root / name
+    data = path.read_bytes()
+    assert len(data) == patch['bytes'] and hashlib.sha256(data).hexdigest() == patch['sha256'], name
+    with zipfile.ZipFile(path) as z:
+        for info in z.infolist():
+            assert (target / info.filename).resolve().is_relative_to(target)
+        z.extractall(target)
+    print('Applied verified update: ' + name, flush=True)
